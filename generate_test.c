@@ -213,12 +213,12 @@ int main(int argc, char *argv[]) {
     free(unordered);
     return 0;
   }
+  long peak_max = max_length;
+  if (peak_max < 3) {
+    printf("Max length for peak is at least 3\n");
+    peak_max = 3;
+  }
   for (long i = 1; i <= num_cases; i += 1) {
-    long peak_max = max_length;
-    if (peak_max < 3) {
-      printf("Max length for peak is at least 3");
-      peak_max = 3;
-    }
     write_peak(rand() % (peak_max - 2) + 3, unordered, i);
     write_scripts_inversion(rand() % max_length + 1, ordered, unordered, working, i);
   }
