@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define STR(NUM) #NUM
-
 #define INPUTS(NAME) "inputs/" NAME ".%ld.in"
 #define OUTPUTS(NAME) "outputs/" NAME ".%ld.out"
 #define PEAK "peak"
