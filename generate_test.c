@@ -9,8 +9,10 @@
 #define PEAK "peak"
 #define SCRIPTS "scripts"
 #define INVERSION "inversion"
-#define DEF_CASES 20
+#define DEF_CASES 50
 #define DEF_LENGTH 20
+#define VAL_START -1
+#define VAL_RAND_INCREMENT 3
 
 // Code modified from Unit 22 - Efficiency
 long count_inversion(long i, long n, const long rank[n])
@@ -35,7 +37,7 @@ long kendall_tau(long n, const long rank[n])
 
 long generate_peak(long n, long unordered[])
 {
-  long curr = -1;
+  long curr = VAL_START;
   long k;
   long direction = rand() % 8;
   long peak = rand() % 3;
@@ -47,12 +49,12 @@ long generate_peak(long n, long unordered[])
     k = rand() % (n - 2) + 1;
   }
   for (long i = 0; i < k; i += 1) {
-    curr += rand() % 3;
+    curr += rand() % VAL_RAND_INCREMENT;
     unordered[i] = curr;
   }
   unordered[k] = curr + peak;
   for (long i = k + 1; i < n; i += 1) {
-    curr -= rand() % 3;
+    curr -= rand() % VAL_RAND_INCREMENT;
     unordered[i] = curr;
   }
   if (peak > 0 && direction > 1) {
@@ -64,9 +66,9 @@ long generate_peak(long n, long unordered[])
 
 void generate_ids(long n, long ordered[], long unordered[], bool working[])
 {
-  long curr = -2;
+  long curr = VAL_START;
   for (long i = 0; i < n; i += 1) {
-    curr += rand() % 3 + 1;
+    curr += rand() % VAL_RAND_INCREMENT + 1;
     ordered[i] = curr;
   }
   for (long i = 0; i < n; i += 1) {
@@ -86,7 +88,7 @@ void generate_ids(long n, long ordered[], long unordered[], bool working[])
   }
 }
 
-FILE *open_file(char *path, long test_num)
+FILE *open_file(const char *path, long test_num)
 {
   char filename[50];
   snprintf(filename, sizeof(char) * 50, path, test_num);
@@ -105,9 +107,10 @@ void close_file(FILE *file)
   }
 }
 
-void write_list(FILE *file, long length, long list[])
+void write_list(FILE *file, long length, const long list[])
 {
   for (long i = 0; i < length; i += 1) {
+    // To print output as well
     // printf("%3ld", list[i]);
     fprintf(file, "%ld ", list[i]);
   }
@@ -115,12 +118,14 @@ void write_list(FILE *file, long length, long list[])
   fprintf(file, "\n");
 }
 
-void write_peak(long length, long unordered[], long i)
+void write_peak(long length, long unordered[], long i, long num_generated[])
 {
   FILE *in = open_file(INPUTS(PEAK), i);
   FILE *out = open_file(OUTPUTS(PEAK), i);
   if (in != NULL && out != NULL) {
-    printf(INPUTS(PEAK)"\n", i);
+    // Prints file name
+    // printf(INPUTS(PEAK)"\t", i);
+    num_generated[0] += 1;
     long output = generate_peak(length, unordered);
     fprintf(in, "%ld\n", length);
     write_list(in, length, unordered);
@@ -136,7 +141,7 @@ void write_peak(long length, long unordered[], long i)
 }
 
 void write_scripts_inversion(long length, long ordered[], long unordered[], 
-    bool working[], long i)
+    bool working[], long i, long num_generated[])
 {
   bool scripts = false;
   bool inversion = false;
@@ -154,13 +159,17 @@ void write_scripts_inversion(long length, long ordered[], long unordered[],
     generate_ids(length, ordered, unordered, working);
   }
   if (scripts) {
-    printf(INPUTS(SCRIPTS)"\n", i);
+    // Prints file name
+    // printf(INPUTS(SCRIPTS)"\t", i);
+    num_generated[1] += 1;
     fprintf(scripts_in, "%ld\n", length);
     write_list(scripts_in, length, unordered);
     write_list(scripts_out, length, ordered);
   }
   if (inversion) {
-    printf(INPUTS(INVERSION)"\n", i);
+    // Prints file name
+    // printf(INPUTS(INVERSION)"\n", i);
+    num_generated[2] += 1;
     fprintf(inversion_in, "%ld\n", length);
     write_list(inversion_in, length, unordered);
     fprintf(inversion_out, "%ld\n", kendall_tau(length, unordered));
@@ -171,7 +180,7 @@ void write_scripts_inversion(long length, long ordered[], long unordered[],
   close_file(inversion_out);
 }
 
-long convert_check_decimal(char *str, char *name, long def)
+long convert_check_decimal(const char *str, const char *name, long def)
 {
   long num = strtol(str, NULL, 10);
   if (num < 1) {
@@ -179,6 +188,23 @@ long convert_check_decimal(char *str, char *name, long def)
     return def;
   } else {
     return num;
+  }
+}
+
+void print_num_generated(const long num[], long num_cases)
+{
+  printf("Number of cases generated - Peak: %ld, Scripts: %ld, "
+      "Inversion: %ld\n", num[0], num[1], num[2]);
+  if (num[0] == 0 && num[1] == 0 && num[2] == 0) {
+    if (num_cases > 3) {
+      printf("No cases generated. Check that this program is being run in the "
+          "same folder as the inputs and outputs folders, and delete some "
+          "cases to generate new ones\n");
+    } else {
+      printf("Maybe increase the number of cases?\n");
+    }
+  } else {
+    printf("Remember to edit Makefile to use the generated cases\n");
   }
 }
 
@@ -197,29 +223,32 @@ int main(int argc, char *argv[]) {
   }
   long *ordered = malloc(max_length * sizeof(long));
   if (ordered == NULL) {
-    printf("Error allocating ordered array");
+    printf("Error allocating ordered array\n");
     return 0;
   }
   long *unordered = malloc(max_length * sizeof(long));
   if (unordered == NULL) {
-    printf("Error allocating unordered array");
+    printf("Error allocating unordered array\n");
     free(ordered);
     return 0;
   }
   bool *working = malloc(max_length * sizeof(bool));
   if (working == NULL) {
-    printf("Error allocating working array");
+    printf("Error allocating working array\n");
     free(ordered);
     free(unordered);
     return 0;
   }
+  long num_generated[3] = {0};
   long peak_max = max_length;
   if (peak_max < 3) {
     printf("Max length for peak is at least 3\n");
     peak_max = 3;
   }
   for (long i = 1; i <= num_cases; i += 1) {
-    write_peak(rand() % (peak_max - 2) + 3, unordered, i);
-    write_scripts_inversion(rand() % max_length + 1, ordered, unordered, working, i);
+    write_peak(rand() % (peak_max - 2) + 3, unordered, i, num_generated);
+    write_scripts_inversion(rand() % max_length + 1, ordered, unordered, 
+        working, i, num_generated);
   }
+  print_num_generated(num_generated, num_cases);
 }
