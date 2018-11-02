@@ -13,6 +13,7 @@
 #define DEF_LENGTH 20
 #define VAL_START -1
 #define VAL_RAND_INCREMENT 3
+#define VAL_NO_INCREMENT_CHANCE 3
 
 // Code modified from Unit 22 - Efficiency
 long count_inversion(long i, long n, const long rank[n])
@@ -49,12 +50,16 @@ long generate_peak(long n, long unordered[])
     k = rand() % (n - 2) + 1;
   }
   for (long i = 0; i < k; i += 1) {
-    curr += rand() % VAL_RAND_INCREMENT;
+    if (rand() % VAL_NO_INCREMENT_CHANCE == 0) {
+      curr += rand() % VAL_RAND_INCREMENT;
+    }
     unordered[i] = curr;
   }
   unordered[k] = curr + peak;
   for (long i = k + 1; i < n; i += 1) {
-    curr -= rand() % VAL_RAND_INCREMENT;
+    if (rand() % VAL_NO_INCREMENT_CHANCE == 0) {
+      curr -= rand() % VAL_RAND_INCREMENT;
+    }
     unordered[i] = curr;
   }
   if (peak > 0 && direction > 1) {
